@@ -51,33 +51,60 @@ function OrderMenu() {
   }, [query]);
 
   /* ================= LOCKING ================= */
-  useEffect(() => {
-    if (!tableNumber) return;
+  // useEffect(() => {
+  //   if (!tableNumber) return;
 
-    socket.emit("tryAccessTable", {
+  //   socket.emit("tryAccessTable", {
+  //     tableId: tableNumber,
+  //     clientId,
+  //   });
+
+  //   const denyHandler = (data) => {
+  //     setIsLocked(true);
+  //     alert(data.message);
+  //   };
+
+  //   socket.on("accessDenied", denyHandler);
+
+  //   const heartbeat = setInterval(() => {
+  //     socket.emit("heartbeat", {
+  //       tableId: tableNumber,
+  //       clientId,
+  //     });
+  //   }, 5000);
+
+  //   return () => {
+  //     clearInterval(heartbeat);
+  //     socket.off("accessDenied", denyHandler);
+  //   };
+  // }, [tableNumber, clientId]);
+useEffect(() => {
+  if (!tableNumber) return;
+
+  socket.emit("tryAccessTable", {
+    tableId: tableNumber,
+    clientId,
+  });
+
+  const denyHandler = (data) => {
+    setIsLocked(true);
+    alert(data.message);
+  };
+
+  socket.on("accessDenied", denyHandler);
+
+  const heartbeat = setInterval(() => {
+    socket.emit("heartbeat", {
       tableId: tableNumber,
       clientId,
     });
+  }, 5000);
 
-    const denyHandler = (data) => {
-      setIsLocked(true);
-      alert(data.message);
-    };
-
-    socket.on("accessDenied", denyHandler);
-
-    const heartbeat = setInterval(() => {
-      socket.emit("heartbeat", {
-        tableId: tableNumber,
-        clientId,
-      });
-    }, 5000);
-
-    return () => {
-      clearInterval(heartbeat);
-      socket.off("accessDenied", denyHandler);
-    };
-  }, [tableNumber, clientId]);
+  return () => {
+    clearInterval(heartbeat);
+    socket.off("accessDenied", denyHandler);
+  };
+}, [tableNumber, clientId]);
 
   /* ================= SOCKET UPDATE ================= */
   useEffect(() => {
