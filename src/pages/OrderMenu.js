@@ -106,16 +106,37 @@ useEffect(() => {
   };
 }, [tableNumber, clientId]);
 
-  /* ================= SOCKET UPDATE ================= */
-  useEffect(() => {
-    const handler = (updatedOrder) => {
-      if (updatedOrder.tableNumber !== tableNumber) return;
-      updateOrderFromSocket(updatedOrder);
-    };
+  // /* ================= SOCKET UPDATE ================= */
+  // useEffect(() => {
+  //   const handler = (updatedOrder) => {
+  //     if (updatedOrder.tableNumber !== tableNumber) return;
+  //     updateOrderFromSocket(updatedOrder);
+  //   };
 
-    socket.on("orderStatusUpdated", handler);
-    return () => socket.off("orderStatusUpdated", handler);
-  }, [tableNumber, updateOrderFromSocket]);
+  //   socket.on("orderStatusUpdated", handler);
+  //   return () => socket.off("orderStatusUpdated", handler);
+  // }, [tableNumber, updateOrderFromSocket]);
+  /* ================= SOCKET UPDATE ================= */
+useEffect(() => {
+  if (!tableNumber) return;
+
+  // PENTING: Beritahu server untuk memasukkan kita ke room meja ini
+  socket.emit("joinTable", tableNumber);
+
+  const handler = (updatedOrder) => {
+    // Debugging: Cek apakah data masuk ke console
+    console.log("Socket Update Received:", updatedOrder);
+    
+    if (String(updatedOrder.tableNumber) !== String(tableNumber)) return;
+    updateOrderFromSocket(updatedOrder);
+  };
+
+  socket.on("orderStatusUpdated", handler);
+  
+  return () => {
+    socket.off("orderStatusUpdated", handler);
+  };
+}, [tableNumber, updateOrderFromSocket]);
 
   /* ================= CART ACTION ================= */
   const addToCart = useCallback((item) => {
