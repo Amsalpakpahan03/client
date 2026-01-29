@@ -10,35 +10,41 @@ function Kitchen() {
     setOrders(data);
   }, []);
 
-  useEffect(() => {
-    fetchOrders();
+  /* ================= SOCKET LOGIC DI KITCHEN.JS ================= */
+useEffect(() => {
+  fetchOrders();
 
-    const onNewOrder = (order) => {
-      setOrders((prev) => {
-        const isExist = prev.find((o) => o._id === order._id);
-        if (isExist) return prev; 
-        return [...prev, order];
-      });
-    };
+  const onNewOrder = (order) => {
+    console.log("📩 Pesanan Baru Masuk:", order);
+    setOrders((prev) => {
+      // Pastikan tidak ada duplikasi ID
+      const isExist = prev.find((o) => String(o._id) === String(order._id));
+      if (isExist) return prev;
+      
+      // Gunakan spread operator agar React mendeteksi perubahan state
+      return [...prev, order];
+    });
+  };
 
-    const onStatusUpdate = (updatedOrder) => {
-      setOrders((prev) => {
-        if (updatedOrder.status === "paid") {
-          return prev.filter((o) => o._id !== updatedOrder._id);
-        }
-        return prev.map((o) => (o._id === updatedOrder._id ? updatedOrder : o));
-      });
-    };
+  const onStatusUpdate = (updatedOrder) => {
+    setOrders((prev) => {
+      if (updatedOrder.status === "paid") {
+        return prev.filter((o) => String(o._id) !== String(updatedOrder._id));
+      }
+      return prev.map((o) => 
+        String(o._id) === String(updatedOrder._id) ? updatedOrder : o
+      );
+    });
+  };
 
-    socket.on("admin_newOrder", onNewOrder);
-    socket.on("admin_orderStatusUpdated", onStatusUpdate);
+  socket.on("admin_newOrder", onNewOrder);
+  socket.on("admin_orderStatusUpdated", onStatusUpdate);
 
-    return () => {
-      socket.off("admin_newOrder", onNewOrder);
-      socket.off("admin_orderStatusUpdated", onStatusUpdate);
-    };
-  }, [fetchOrders]);
-
+  return () => {
+    socket.off("admin_newOrder", onNewOrder);
+    socket.off("admin_orderStatusUpdated", onStatusUpdate);
+  };
+}, [fetchOrders]);
   // Handler baru untuk update status per item (misal: hanya minuman)
   const updateItemStatus = async (orderId, itemId, currentStatus) => {
     // Logika flow sederhana untuk item: pending -> served
