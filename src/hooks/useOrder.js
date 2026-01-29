@@ -8,23 +8,24 @@ export const useOrder = (tableNumber) => {
   const [activeOrder, setActiveOrder] = useState(null);
 
   /* ================= CREATE ORDER ================= */
-  const createOrder = async (payload) => {
+  // Perbaikan fungsi createOrder di useOrder.js
+const createOrder = async (payload) => {
+  try {
     const token = localStorage.getItem("order_token");
-
-    const res = await axios.post(
-      `${API_URL}/orders`,
-      payload,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+    const res = await axios.post(`${API_URL}/orders`, payload, {
+      headers: { Authorization: `Bearer ${token}` },
+      timeout: 15000, // Tambahkan timeout 15 detik
+    });
 
     setActiveOrder(res.data);
     localStorage.setItem("activeOrderId", res.data._id);
-  };
-
+    return res.data;
+  } catch (err) {
+    console.error("Gagal membuat pesanan:", err.response?.data || err.message);
+    alert("Gagal memesan: " + (err.response?.data?.message || err.message));
+    throw err;
+  }
+};
   /* ================= RESTORE ORDER ================= */
   useEffect(() => {
     if (!tableNumber) return;
