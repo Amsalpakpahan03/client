@@ -369,11 +369,27 @@ const styles = {
   productPrice: { color: "#EA580C", fontWeight: "800", margin: "4px 0 10px", fontSize: 14 },
   deleteBtn: { width: "100%", border: "none", color: "#EF4444", backgroundColor: "#FEF2F2", padding: "8px", borderRadius: 8, cursor: "pointer", fontWeight: "700", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 4 },
   loaderCenter: { display: "flex", justifyContent: "center", padding: "100px 0", color: "#5E4A3A" },
-  actionBtnDisabled: (active) => ({
-    backgroundColor: active ? "#5E4A3A" : "#F3F4F6",
-    color: active ? "white" : "#9CA3AF",
-    border: "none", padding: "8px", borderRadius: 8, fontWeight: "700", fontSize: 11, cursor: active ? "pointer" : "not-allowed", transition: "0.2s"
-  }),
+  // actionBtnDisabled: (active) => ({
+  //   backgroundColor: active ? "#5E4A3A" : "#F3F4F6",
+  //   color: active ? "white" : "#9CA3AF",
+  //   border: "none", padding: "8px", borderRadius: 8, fontWeight: "700", fontSize: 11, cursor: active ? "pointer" : "not-allowed", transition: "0.2s"
+  // }),
+  // Locate this inside your 'styles' object (around line 350-360)
+// Replace the old actionBtnDisabled with this:
+
+actionBtnDisabled(active) {
+  return {
+    backgroundColor: active ? "#E5E7EB" : "#F3F4F6",
+    color: active ? "#1F2937" : "#9CA3AF",
+    border: "none",
+    padding: 8,
+    borderRadius: 8,
+    fontWeight: "bold",
+    fontSize: 10,
+    cursor: active ? "pointer" : "not-allowed",
+    opacity: active ? 1 : 0.6,
+  };
+},
 };
 
 export default AdminPage;
