@@ -236,6 +236,8 @@ const handleOrder = async () => {
         return {};
     }
   };
+
+  /* ================= VIEW: ORDER STATUS ================= */
   /* ================= VIEW: ORDER STATUS ================= */
   if (activeOrder) {
     const status = getStatusInfo(activeOrder.status);
