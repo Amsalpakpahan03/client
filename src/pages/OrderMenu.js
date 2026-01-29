@@ -94,8 +94,9 @@ function OrderMenu() {
     // JOIN ROOM
     socket.emit("joinTable", tableNumber);
 
-   const handler = (updatedOrder) => {
-  // Gunakan String() untuk memastikan perbandingan tipe data yang sama
+
+    const handler = (updatedOrder) => {
+  // Gunakan String() untuk memastikan perbandingan aman (Meja 8 vs "8")
   if (String(updatedOrder.tableNumber) !== String(tableNumber)) return;
   updateOrderFromSocket(updatedOrder);
 };
