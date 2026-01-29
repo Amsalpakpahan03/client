@@ -71,7 +71,8 @@ export const useOrder = (tableNumber) => {
       }
 
       // 🔒 BUKAN ORDER KITA → ABAIKAN
-      if (current._id !== updatedOrder._id) return current;
+     if (String(current._id) !== String(updatedOrder._id)) return current;
+      
 
       // ✅ ORDER SELESAI
       if (updatedOrder.status === "paid") {
