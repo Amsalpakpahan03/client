@@ -306,65 +306,43 @@ const MenuItem = React.memo(function MenuItem({
 }) {
   return (
     <div style={styles.menuCard}>
+      {/* IMAGE */}
       <img
         src={
           item.image_url?.startsWith("http")
             ? item.image_url
-            : `${ASSET_URL}/uploads/${
-                item.image_url || "no-image.png"
-              }`
+            : `${ASSET_URL}/uploads/${item.image_url || "no-image.png"}`
         }
         alt={item.name}
-        width="80"
-        height="80"
         loading="lazy"
         style={styles.menuImage}
       />
 
-      // <div style={{ flex: 1 }}>
-      //   <b>{item.name}</b>
-      //   <div style={styles.price}>
-      //     Rp {item.price.toLocaleString()}
-      //   </div>
-      // </div>
+      {/* INFO */}
+      <div style={styles.menuInfo}>
+        <div style={styles.menuName}>{item.name}</div>
 
-        <div style={{ flex: 1 }}>
-  <b>{item.name}</b>
+        {item.description && (
+          <div style={styles.menuDesc}>
+            {item.description}
+          </div>
+        )}
 
-  {item.description && (
-    <div style={{ fontSize: '12px', color: '#7f8c8d', marginTop: '4px' }}>
-      {item.description}
-    </div>
-  )}
+        <div style={styles.menuPrice}>
+          Rp {item.price.toLocaleString()}
+        </div>
+      </div>
 
-  <div style={{ color: '#c0392b', fontWeight: 'bold', marginTop: '6px' }}>
-    Rp {item.price.toLocaleString()}
-  </div>
-</div>
-
-
+      {/* ACTION */}
       <div style={styles.action}>
         {qty ? (
           <>
-            <button
-              style={styles.qtyBtn}
-              onClick={() => onRemove(item)}
-            >
-              −
-            </button>
-            {qty}
-            <button
-              style={styles.qtyBtn}
-              onClick={() => onAdd(item)}
-            >
-              +
-            </button>
+            <button style={styles.qtyBtn} onClick={() => onRemove(item)}>−</button>
+            <span>{qty}</span>
+            <button style={styles.qtyBtn} onClick={() => onAdd(item)}>+</button>
           </>
         ) : (
-          <button
-            style={styles.addBtn}
-            onClick={() => onAdd(item)}
-          >
+          <button style={styles.addBtn} onClick={() => onAdd(item)}>
             Tambah
           </button>
         )}
@@ -372,6 +350,7 @@ const MenuItem = React.memo(function MenuItem({
     </div>
   );
 });
+
 
 /* ================= STYLES ================= */
 const styles = {
@@ -392,6 +371,49 @@ const styles = {
   orderItem: { display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f1f1f1' },
   totalRow: { marginTop: '15px', textAlign: 'right', borderTop: '2px dashed #eee', paddingTop: '10px', fontSize: '18px' },
   footerNote: { textAlign: 'center', fontSize: '12px', color: '#95a5a6', marginTop: '15px' }
+  menuCard: {
+  display: "flex",
+  alignItems: "center",
+  gap: "14px",
+  background: "#fff",
+  padding: "14px",
+  borderRadius: "14px",
+  marginBottom: "12px",
+  boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+},
+
+menuImage: {
+  width: "72px",
+  height: "72px",
+  borderRadius: "12px",
+  objectFit: "cover",
+  flexShrink: 0,
+},
+
+menuInfo: {
+  flex: 1,
+  minWidth: 0, // 🔑 PENTING supaya teks tidak maksa layout
+},
+
+menuName: {
+  fontWeight: "600",
+  fontSize: "15px",
+  marginBottom: "4px",
+},
+
+menuDesc: {
+  fontSize: "12px",
+  color: "#7f8c8d",
+  lineHeight: "1.4",
+  marginBottom: "6px",
+},
+
+menuPrice: {
+  fontWeight: "bold",
+  color: "#c0392b",
+  fontSize: "14px",
+},
+
 };
 
 export default OrderMenu;
