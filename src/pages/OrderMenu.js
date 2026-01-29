@@ -157,6 +157,7 @@ function OrderMenu() {
         name: m.name,
         quantity: cart[m._id],
         price: m.price,
+        category: m.category,
       }));
 
     await createOrder({
@@ -209,8 +210,18 @@ function OrderMenu() {
   };
 
   /* ================= VIEW: ORDER STATUS ================= */
+  /* ================= VIEW: ORDER STATUS ================= */
   if (activeOrder) {
     const status = getStatusInfo(activeOrder.status);
+
+    // Kelompokkan item berdasarkan kategori untuk tampilan status
+    const itemsByCategory = activeOrder.items.reduce((acc, item) => {
+      // Gunakan properti category dari database (pastikan model sudah diupdate)
+      const cat = item.category || "Lainnya"; 
+      if (!acc[cat]) acc[cat] = [];
+      acc[cat].push(item);
+      return acc;
+    }, {});
 
     return (
       <div style={styles.container}>
@@ -223,26 +234,41 @@ function OrderMenu() {
             background: status.bg,
           }}
         >
-          <h3>{status.text}</h3>
+          <h3 style={{ marginBottom: 15 }}>Status Utama: {status.text}</h3>
 
-          <ul>
-            {activeOrder.items.map((item, i) => (
-              <li key={i}>
-                {item.name} × {item.quantity} = Rp{" "}
-                {(item.price * item.quantity).toLocaleString()}
-              </li>
-            ))}
-          </ul>
+          {/* Render status per kelompok kategori */}
+          {Object.entries(itemsByCategory).map(([category, items]) => (
+            <div key={category} style={{ marginBottom: 15, padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.5)' }}>
+              <h4 style={{ margin: '0 0 5px 0', color: '#555', borderBottom: '1px solid #ddd' }}>
+                {category}
+              </h4>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                {items.map((item, i) => (
+                  <li key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '3px' }}>
+                    <span>{item.name} × {item.quantity}</span>
+                    <span style={{ 
+                      fontWeight: 'bold', 
+                      color: item.status === 'served' ? '#27ae60' : '#e67e22' 
+                    }}>
+                      {item.status === 'served' ? "✅ Siap" : "🍳 Proses"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
 
-          <b>
-            Total: Rp{" "}
-            {activeOrder.totalPrice.toLocaleString()}
-          </b>
+          <div style={{ marginTop: 15, paddingTop: 10, borderTop: '2px dashed #ccc' }}>
+            <b>Total: Rp {activeOrder.totalPrice.toLocaleString()}</b>
+          </div>
         </div>
+        
+        <p style={{ textAlign: 'center', fontSize: '12px', color: '#7f8c8d', marginTop: 10 }}>
+          * Minuman biasanya diantar lebih awal.
+        </p>
       </div>
     );
   }
-
   /* ================= VIEW: MENU ================= */
   return (
     <div style={styles.container}>
