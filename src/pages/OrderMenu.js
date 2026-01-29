@@ -358,7 +358,7 @@ const styles = {
   container: { padding: '20px', maxWidth: '500px', margin: '0 auto' },
   pageTitle: { textAlign: 'center', color: '#2c3e50', marginBottom: '20px' },
   categoryTitle: { borderLeft: '4px solid #c0392b', paddingLeft: '10px', color: '#c0392b', marginBottom: '15px' },
-  menuCard: { display: 'flex', gap: '15px', background: '#fff', padding: '12px', borderRadius: '12px', marginBottom: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', alignItems: 'center' },
+  // menuCard: { display: 'flex', gap: '15px', background: '#fff', padding: '12px', borderRadius: '12px', marginBottom: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', alignItems: 'center' },
   menuImage: { width: '70px', height: '70px', borderRadius: '10px', objectFit: 'cover' },
   priceText: { color: '#c0392b', fontWeight: 'bold', marginTop: '4px' },
   qtyControl: { display: 'flex', alignItems: 'center', gap: '12px', background: '#f1f2f6', borderRadius: '20px', padding: '4px 8px' },
