@@ -6,163 +6,146 @@ function Kitchen() {
   const [orders, setOrders] = useState([]);
   const ordersRef = useRef([]);
 
-  // Fungsi untuk mengupdate state dan ref secara bersamaan
-  const syncOrders = (newData) => {
-    setOrders(newData);
-    ordersRef.current = newData;
+  // Sinkronisasi State & Ref agar Socket selalu dapat data terbaru
+  const syncOrders = (data) => {
+    setOrders(data);
+    ordersRef.current = data;
   };
 
-  /* ================= 1. FETCH DATA AWAL ================= */
   const fetchOrders = useCallback(async () => {
     try {
       const { data } = await OrderAPI.getAll();
       syncOrders(data);
     } catch (err) {
-      console.error("Gagal mengambil data:", err);
+      console.error("Gagal ambil data:", err);
     }
   }, []);
 
-  /* ================= 2. REALTIME SOCKET LOGIC ================= */
+  /* ================= SOCKET LOGIC (ANTI-REFRESH) ================= */
   useEffect(() => {
     fetchOrders();
 
-    // Handler untuk pesanan baru
+    // Pastikan socket terkoneksi
+    socket.on("connect", () => console.log("✅ Terhubung ke Server"));
+
     const onNewOrder = (order) => {
-      console.log("📩 Socket: Pesanan Baru", order);
+      console.log("📩 Pesanan Baru:", order);
       const isExist = ordersRef.current.find((o) => String(o._id) === String(order._id));
       if (!isExist) {
         syncOrders([...ordersRef.current, order]);
       }
     };
 
-    // Handler untuk update status (global maupun per-item)
     const onStatusUpdate = (updatedOrder) => {
-      console.log("🔄 Socket: Update Diterima", updatedOrder);
+      console.log("🔄 Update Diterima:", updatedOrder);
       if (updatedOrder.status === "paid") {
-        // Jika lunas, hapus dari antrian dapur
-        const filtered = ordersRef.current.filter((o) => String(o._id) !== String(updatedOrder._id));
-        syncOrders(filtered);
+        syncOrders(ordersRef.current.filter((o) => String(o._id) !== String(updatedOrder._id)));
       } else {
-        // Update data pesanan yang ada di list
-        const mapped = ordersRef.current.map((o) =>
+        syncOrders(ordersRef.current.map((o) => 
           String(o._id) === String(updatedOrder._id) ? updatedOrder : o
-        );
-        syncOrders(mapped);
+        ));
       }
     };
 
     socket.on("admin_newOrder", onNewOrder);
     socket.on("admin_orderStatusUpdated", onStatusUpdate);
 
-    // Cleanup saat pindah halaman
     return () => {
-      socket.off("admin_newOrder", onNewOrder);
-      socket.off("admin_orderStatusUpdated", onStatusUpdate);
+      socket.off("admin_newOrder");
+      socket.off("admin_orderStatusUpdated");
     };
   }, [fetchOrders]);
 
-  /* ================= 3. ACTIONS ================= */
-  const updateItemStatus = async (orderId, itemId) => {
+  /* ================= ACTION HANDLERS ================= */
+
+  // TOMBOL TERPISAH: Update status per item (Makanan/Minuman)
+  const handleItemAction = async (orderId, itemId) => {
     try {
-      // Mengubah status item spesifik menjadi 'served'
+      // Mengirim request ke backend untuk update status item spesifik
       await OrderAPI.updateItemStatus(orderId, itemId, "served");
+      // Tidak perlu setOrders manual di sini, biarkan socket yang mengupdate otomatis
     } catch (err) {
-      console.error("Gagal update item status");
+      alert("Gagal update item!");
     }
   };
 
-  const updateStatus = async (id, currentStatus) => {
-    const flow = { pending: "cooking", cooking: "served", served: "paid" };
-    if (flow[currentStatus]) {
-      try {
-        await OrderAPI.updateStatus(id, flow[currentStatus]);
-      } catch (err) {
-        console.error("Gagal update status global");
+  // TOMBOL GLOBAL: Update status pesanan (Pending -> Cooking -> Served)
+  const handleGlobalAction = async (id, currentStatus) => {
+    const nextStatus = { pending: "cooking", cooking: "served", served: "paid" };
+    try {
+      if (nextStatus[currentStatus]) {
+        await OrderAPI.updateStatus(id, nextStatus[currentStatus]);
       }
+    } catch (err) {
+      alert("Gagal update status global!");
     }
   };
 
   const statusConfig = {
     pending: { label: "BARU", color: "#e74c3c" },
     cooking: { label: "PROSES", color: "#f39c12" },
-    served: { label: "SELESAI", color: "#2ecc71" },
+    served: { label: "SIAP", color: "#2ecc71" },
   };
 
   return (
     <div style={styles.page}>
       <header style={styles.header}>
-        <h1 style={styles.title}>🍳 Dapur – Antrian Pesanan</h1>
-        <div style={styles.indicator}>
-          <div style={styles.dot}></div>
-          <span style={{color: '#2ecc71', fontWeight: 'bold'}}>Sistem Terhubung</span>
-        </div>
+        <h1 style={styles.title}>🍳 Dashboard Dapur</h1>
+        <div style={styles.status}>● Realtime Connected</div>
       </header>
 
       <div style={styles.grid}>
-        {orders.map((order, index) => {
-          const status = statusConfig[order.status] || { label: order.status, color: "#7f8c8d" };
-          
-          // Pemisahan kategori (Minuman vs Makanan/Lainnya)
-          const drinks = order.items.filter((i) => i.category === "Minuman");
-          const foods = order.items.filter((i) => i.category !== "Minuman");
+        {orders.map((order) => {
+          const cfg = statusConfig[order.status] || { label: "UNKNOWN", color: "#95a5a6" };
+          const drinks = order.items.filter(i => i.category === "Minuman");
+          const foods = order.items.filter(i => i.category !== "Minuman");
 
           return (
             <div key={order._id} style={styles.card}>
               <div style={styles.cardHeader}>
-                <div>
-                  <h2 style={{ margin: 0, fontSize: '18px' }}>Meja {order.tableNumber}</h2>
-                  <small style={{ color: '#888' }}>#{index + 1} • {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small>
-                </div>
-                <span style={{ ...styles.badge, backgroundColor: status.color }}>
-                  {status.label}
-                </span>
+                <h2 style={{margin:0}}>Meja {order.tableNumber}</h2>
+                <span style={{...styles.badge, backgroundColor: cfg.color}}>{cfg.label}</span>
               </div>
 
-              {/* AREA MINUMAN */}
+              {/* SEKSI MINUMAN */}
               {drinks.length > 0 && (
-                <div style={{ ...styles.section, borderLeft: '4px solid #3498db' }}>
-                  <p style={styles.sectionTitle}>🥤 MINUMAN</p>
-                  {drinks.map((item) => (
-                    <div key={item._id} style={styles.itemRow}>
-                      <span style={{ 
-                        textDecoration: item.status === "served" ? "line-through" : "none",
-                        color: item.status === "served" ? "#bbb" : "#333"
-                      }}>
-                        <strong>{item.quantity}x</strong> {item.name}
+                <div style={styles.section}>
+                  <p style={{...styles.sectionTitle, color: '#3498db'}}>🥤 MINUMAN</p>
+                  {drinks.map(item => (
+                    <div key={item._id} style={styles.row}>
+                      <span style={{ textDecoration: item.status === 'served' ? 'line-through' : 'none' }}>
+                        {item.quantity}x {item.name}
                       </span>
-                      {item.status !== "served" && (
-                        <button style={styles.btnSmall} onClick={() => updateItemStatus(order._id, item._id)}>Antar</button>
-                      )}
+                      {item.status !== 'served' ? (
+                        <button style={styles.miniBtn} onClick={() => handleItemAction(order._id, item._id)}>Sajikan</button>
+                      ) : <span style={{color: '#2ecc71'}}>✔</span>}
                     </div>
                   ))}
                 </div>
               )}
 
-              {/* AREA MAKANAN */}
+              {/* SEKSI MAKANAN */}
               {foods.length > 0 && (
-                <div style={{ ...styles.section, borderLeft: '4px solid #e67e22' }}>
-                  <p style={{ ...styles.sectionTitle, color: '#e67e22' }}>🍔 MAKANAN & LAINNYA</p>
-                  {foods.map((item) => (
-                    <div key={item._id} style={styles.itemRow}>
-                      <span style={{ 
-                        textDecoration: item.status === "served" ? "line-through" : "none",
-                        color: item.status === "served" ? "#bbb" : "#333"
-                      }}>
-                        <strong>{item.quantity}x</strong> {item.name}
+                <div style={styles.section}>
+                  <p style={{...styles.sectionTitle, color: '#e67e22'}}>🍔 MAKANAN</p>
+                  {foods.map(item => (
+                    <div key={item._id} style={styles.row}>
+                      <span style={{ textDecoration: item.status === 'served' ? 'line-through' : 'none' }}>
+                        {item.quantity}x {item.name}
                       </span>
-                      {item.status !== "served" && (
-                        <button style={{ ...styles.btnSmall, background: "#e67e22" }} onClick={() => updateItemStatus(order._id, item._id)}>Siap</button>
-                      )}
+                      {item.status !== 'served' ? (
+                        <button style={{...styles.miniBtn, backgroundColor: '#e67e22'}} onClick={() => handleItemAction(order._id, item._id)}>Siap</button>
+                      ) : <span style={{color: '#2ecc71'}}>✔</span>}
                     </div>
                   ))}
                 </div>
               )}
 
-              <button
-                style={{ ...styles.btnMain, backgroundColor: status.color }}
-                onClick={() => updateStatus(order._id, order.status)}
+              <button 
+                style={{...styles.mainBtn, backgroundColor: cfg.color}}
+                onClick={() => handleGlobalAction(order._id, order.status)}
               >
-                {order.status === "pending" ? "Mulai Masak" : order.status === "cooking" ? "Sajikan Semua" : "Selesaikan & Bayar"}
+                {order.status === 'pending' ? 'MULAI MASAK' : order.status === 'cooking' ? 'SELESAIKAN MEJA' : 'LUNASKAN'}
               </button>
             </div>
           );
@@ -173,20 +156,18 @@ function Kitchen() {
 }
 
 const styles = {
-  page: { padding: "25px", background: "#f0f2f5", minHeight: "100vh", fontFamily: "'Inter', sans-serif" },
-  header: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px" },
-  title: { margin: 0, fontSize: "26px", fontWeight: "800", color: "#2c3e50" },
-  indicator: { fontSize: "13px", display: "flex", alignItems: "center", gap: "8px", background: "#fff", padding: "5px 12px", borderRadius: "20px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" },
-  dot: { width: "10px", height: "10px", background: "#2ecc71", borderRadius: "50%", animation: "pulse 2s infinite" },
-  grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "25px" },
-  card: { background: "#fff", padding: "20px", borderRadius: "15px", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)", display: 'flex', flexDirection: 'column' },
-  cardHeader: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px" },
-  badge: { color: "#fff", padding: "5px 10px", borderRadius: "8px", fontSize: "11px", fontWeight: "bold" },
-  section: { background: "#f8f9fa", padding: "12px", borderRadius: "10px", marginBottom: "12px" },
-  sectionTitle: { fontSize: "11px", fontWeight: "800", color: "#3498db", margin: "0 0 8px 0", letterSpacing: "0.5px" },
-  itemRow: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "15px", marginBottom: "8px" },
-  btnSmall: { border: "none", background: "#3498db", color: "#fff", padding: "5px 12px", borderRadius: "6px", fontSize: "11px", cursor: "pointer", fontWeight: "bold" },
-  btnMain: { width: "100%", border: "none", color: "#fff", padding: "14px", borderRadius: "10px", cursor: "pointer", fontWeight: "bold", marginTop: "auto", transition: "all 0.3s ease" }
+  page: { padding: '20px', background: '#f8f9fa', minHeight: '100vh', fontFamily: 'sans-serif' },
+  header: { display: 'flex', justifyContent: 'space-between', marginBottom: '20px' },
+  status: { color: '#2ecc71', fontSize: '12px', fontWeight: 'bold' },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' },
+  card: { background: '#fff', padding: '15px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' },
+  cardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' },
+  badge: { color: '#fff', padding: '4px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: 'bold' },
+  section: { background: '#f1f3f5', padding: '10px', borderRadius: '8px', marginBottom: '10px' },
+  sectionTitle: { fontSize: '11px', fontWeight: 'bold', margin: '0 0 8px 0' },
+  row: { display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '6px', alignItems: 'center' },
+  miniBtn: { border: 'none', color: '#fff', background: '#3498db', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' },
+  mainBtn: { width: '100%', border: 'none', color: '#fff', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', marginTop: '10px' }
 };
 
 export default Kitchen;
