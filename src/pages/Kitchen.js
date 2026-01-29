@@ -4,89 +4,70 @@ import socket from "../api/socket";
 
 function Kitchen() {
   const [orders, setOrders] = useState([]);
-  // Gunakan ref untuk melacak data terbaru tanpa memicu re-render berlebih
   const ordersRef = useRef([]);
+
+  // Fungsi untuk mengupdate state dan ref secara bersamaan
+  const syncOrders = (newData) => {
+    setOrders(newData);
+    ordersRef.current = newData;
+  };
 
   /* ================= 1. FETCH DATA AWAL ================= */
   const fetchOrders = useCallback(async () => {
     try {
       const { data } = await OrderAPI.getAll();
-      setOrders(data);
-      ordersRef.current = data;
+      syncOrders(data);
     } catch (err) {
       console.error("Gagal mengambil data:", err);
     }
   }, []);
 
-  /* ================= 2. HANDLER LOGIC ================= */
-  const onNewOrder = useCallback((order) => {
-    console.log("📩 Sinyal Pesanan Baru:", order);
-    setOrders((prev) => {
-      const isExist = prev.find((o) => String(o._id) === String(order._id));
-      if (isExist) return prev;
-      const newOrders = [...prev, order];
-      ordersRef.current = newOrders;
-      return newOrders;
-    });
-  }, []);
+  /* ================= 2. REALTIME SOCKET LOGIC ================= */
+  useEffect(() => {
+    fetchOrders();
 
-  const onStatusUpdate = useCallback((updatedOrder) => {
-    console.log("🔄 Sinyal Update Diterima:", updatedOrder);
-    setOrders((prev) => {
-      if (updatedOrder.status === "paid") {
-        const filtered = prev.filter((o) => String(o._id) !== String(updatedOrder._id));
-        ordersRef.current = filtered;
-        return filtered;
+    // Handler untuk pesanan baru
+    const onNewOrder = (order) => {
+      console.log("📩 Socket: Pesanan Baru", order);
+      const isExist = ordersRef.current.find((o) => String(o._id) === String(order._id));
+      if (!isExist) {
+        syncOrders([...ordersRef.current, order]);
       }
-      const mapped = prev.map((o) => 
-        String(o._id) === String(updatedOrder._id) ? updatedOrder : o
-      );
-      ordersRef.current = mapped;
-      return mapped;
-    });
-  }, []);
+    };
 
-  /* ================= 3. SOCKET CONNECTION ================= */
-  /* ================= SOCKET (PERBAIKAN) ================= */
-useEffect(() => {
-  fetchOrders();
-
-  const onNewOrder = (order) => {
-    console.log("Pesanan baru diterima via socket:", order); // Tambahkan log untuk debug
-    setOrders((prev) => {
-      // Filter untuk memastikan tidak ada ID yang sama sebelum menambah
-      const isExist = prev.find((o) => o._id === order._id);
-      if (isExist) return prev; 
-      return [...prev, order];
-    });
-  };
-
-  const onStatusUpdate = (updatedOrder) => {
-    setOrders((prev) => {
-      // Jika statusnya 'paid', hilangkan dari daftar dapur
+    // Handler untuk update status (global maupun per-item)
+    const onStatusUpdate = (updatedOrder) => {
+      console.log("🔄 Socket: Update Diterima", updatedOrder);
       if (updatedOrder.status === "paid") {
-        return prev.filter((o) => o._id !== updatedOrder._id);
+        // Jika lunas, hapus dari antrian dapur
+        const filtered = ordersRef.current.filter((o) => String(o._id) !== String(updatedOrder._id));
+        syncOrders(filtered);
+      } else {
+        // Update data pesanan yang ada di list
+        const mapped = ordersRef.current.map((o) =>
+          String(o._id) === String(updatedOrder._id) ? updatedOrder : o
+        );
+        syncOrders(mapped);
       }
-      // Update data yang ada
-      return prev.map((o) => (o._id === updatedOrder._id ? updatedOrder : o));
-    });
-  };
+    };
 
-  socket.on("admin_newOrder", onNewOrder);
-  socket.on("admin_orderStatusUpdated", onStatusUpdate);
+    socket.on("admin_newOrder", onNewOrder);
+    socket.on("admin_orderStatusUpdated", onStatusUpdate);
 
-  return () => {
-    socket.off("admin_newOrder", onNewOrder);
-    socket.off("admin_orderStatusUpdated", onStatusUpdate);
-  };
-}, [fetchOrders]);
+    // Cleanup saat pindah halaman
+    return () => {
+      socket.off("admin_newOrder", onNewOrder);
+      socket.off("admin_orderStatusUpdated", onStatusUpdate);
+    };
+  }, [fetchOrders]);
 
-  /* ================= 4. ACTIONS ================= */
-  const updateItemStatus = async (orderId, itemId, currentStatus) => {
+  /* ================= 3. ACTIONS ================= */
+  const updateItemStatus = async (orderId, itemId) => {
     try {
+      // Mengubah status item spesifik menjadi 'served'
       await OrderAPI.updateItemStatus(orderId, itemId, "served");
     } catch (err) {
-      console.error("Gagal update item");
+      console.error("Gagal update item status");
     }
   };
 
@@ -102,10 +83,9 @@ useEffect(() => {
   };
 
   const statusConfig = {
-    pending: { label: "NEW", color: "#e74c3c" },
-    cooking: { label: "COOKING", color: "#f39c12" },
-    served: { label: "SERVED", color: "#2ecc71" },
-    paid: { label: "PAID", color: "#7f8c8d" },
+    pending: { label: "BARU", color: "#e74c3c" },
+    cooking: { label: "PROSES", color: "#f39c12" },
+    served: { label: "SELESAI", color: "#2ecc71" },
   };
 
   return (
@@ -113,60 +93,76 @@ useEffect(() => {
       <header style={styles.header}>
         <h1 style={styles.title}>🍳 Dapur – Antrian Pesanan</h1>
         <div style={styles.indicator}>
-           <div style={styles.dot}></div> Realtime Active
+          <div style={styles.dot}></div>
+          <span style={{color: '#2ecc71', fontWeight: 'bold'}}>Sistem Terhubung</span>
         </div>
       </header>
 
       <div style={styles.grid}>
         {orders.map((order, index) => {
-          const status = statusConfig[order.status] || statusConfig.pending;
-          const drinks = order.items.filter(i => i.category === "Minuman");
-          const foods = order.items.filter(i => i.category !== "Minuman");
+          const status = statusConfig[order.status] || { label: order.status, color: "#7f8c8d" };
+          
+          // Pemisahan kategori (Minuman vs Makanan/Lainnya)
+          const drinks = order.items.filter((i) => i.category === "Minuman");
+          const foods = order.items.filter((i) => i.category !== "Minuman");
 
           return (
             <div key={order._id} style={styles.card}>
               <div style={styles.cardHeader}>
-                <b>Meja {order.tableNumber}</b>
-                <span style={{...styles.badge, backgroundColor: status.color}}>{status.label}</span>
+                <div>
+                  <h2 style={{ margin: 0, fontSize: '18px' }}>Meja {order.tableNumber}</h2>
+                  <small style={{ color: '#888' }}>#{index + 1} • {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small>
+                </div>
+                <span style={{ ...styles.badge, backgroundColor: status.color }}>
+                  {status.label}
+                </span>
               </div>
 
+              {/* AREA MINUMAN */}
               {drinks.length > 0 && (
-                <div style={styles.section}>
+                <div style={{ ...styles.section, borderLeft: '4px solid #3498db' }}>
                   <p style={styles.sectionTitle}>🥤 MINUMAN</p>
-                  {drinks.map(item => (
+                  {drinks.map((item) => (
                     <div key={item._id} style={styles.itemRow}>
-                      <span style={{textDecoration: item.status === 'served' ? 'line-through' : 'none'}}>
-                        {item.quantity}x {item.name}
+                      <span style={{ 
+                        textDecoration: item.status === "served" ? "line-through" : "none",
+                        color: item.status === "served" ? "#bbb" : "#333"
+                      }}>
+                        <strong>{item.quantity}x</strong> {item.name}
                       </span>
-                      {item.status !== 'served' && (
-                        <button style={styles.btnSmall} onClick={() => updateItemStatus(order._id, item._id)}>Sajikan</button>
+                      {item.status !== "served" && (
+                        <button style={styles.btnSmall} onClick={() => updateItemStatus(order._id, item._id)}>Antar</button>
                       )}
                     </div>
                   ))}
                 </div>
               )}
 
+              {/* AREA MAKANAN */}
               {foods.length > 0 && (
-                <div style={styles.section}>
-                  <p style={styles.sectionTitle}>🍔 MAKANAN</p>
-                  {foods.map(item => (
+                <div style={{ ...styles.section, borderLeft: '4px solid #e67e22' }}>
+                  <p style={{ ...styles.sectionTitle, color: '#e67e22' }}>🍔 MAKANAN & LAINNYA</p>
+                  {foods.map((item) => (
                     <div key={item._id} style={styles.itemRow}>
-                      <span style={{textDecoration: item.status === 'served' ? 'line-through' : 'none'}}>
-                        {item.quantity}x {item.name}
+                      <span style={{ 
+                        textDecoration: item.status === "served" ? "line-through" : "none",
+                        color: item.status === "served" ? "#bbb" : "#333"
+                      }}>
+                        <strong>{item.quantity}x</strong> {item.name}
                       </span>
-                      {item.status !== 'served' && (
-                        <button style={{...styles.btnSmall, background: '#e67e22'}} onClick={() => updateItemStatus(order._id, item._id)}>Siap</button>
+                      {item.status !== "served" && (
+                        <button style={{ ...styles.btnSmall, background: "#e67e22" }} onClick={() => updateItemStatus(order._id, item._id)}>Siap</button>
                       )}
                     </div>
                   ))}
                 </div>
               )}
 
-              <button 
-                style={{...styles.btnMain, backgroundColor: status.color}}
+              <button
+                style={{ ...styles.btnMain, backgroundColor: status.color }}
                 onClick={() => updateStatus(order._id, order.status)}
               >
-                {order.status === "pending" ? "Masak" : order.status === "cooking" ? "Sajikan Semua" : "Selesai"}
+                {order.status === "pending" ? "Mulai Masak" : order.status === "cooking" ? "Sajikan Semua" : "Selesaikan & Bayar"}
               </button>
             </div>
           );
@@ -177,19 +173,20 @@ useEffect(() => {
 }
 
 const styles = {
-  page: { padding: "20px", background: "#f5f5f5", minHeight: "100vh" },
-  header: { display: "flex", justifyContent: "space-between", marginBottom: "20px" },
-  indicator: { fontSize: "12px", display: "flex", alignItems: "center", gap: "5px" },
-  dot: { width: "8px", height: "8px", background: "#2ecc71", borderRadius: "50%" },
-  grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "20px" },
-  card: { background: "#fff", padding: "15px", borderRadius: "10px", boxShadow: "0 2px 5px rgba(0,0,0,0.1)" },
-  cardHeader: { display: "flex", justifyContent: "space-between", marginBottom: "15px" },
-  badge: { color: "#fff", padding: "3px 8px", borderRadius: "5px", fontSize: "10px" },
-  section: { background: "#f9f9f9", padding: "10px", borderRadius: "5px", marginBottom: "10px" },
-  sectionTitle: { fontSize: "10px", color: "#999", margin: "0 0 5px 0" },
-  itemRow: { display: "flex", justifyContent: "space-between", fontSize: "14px", marginBottom: "5px" },
-  btnSmall: { border: "none", background: "#3498db", color: "#fff", padding: "2px 8px", borderRadius: "4px", fontSize: "10px", cursor: "pointer" },
-  btnMain: { width: "100%", border: "none", color: "#fff", padding: "10px", borderRadius: "5px", cursor: "pointer", fontWeight: "bold", marginTop: "10px" }
+  page: { padding: "25px", background: "#f0f2f5", minHeight: "100vh", fontFamily: "'Inter', sans-serif" },
+  header: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px" },
+  title: { margin: 0, fontSize: "26px", fontWeight: "800", color: "#2c3e50" },
+  indicator: { fontSize: "13px", display: "flex", alignItems: "center", gap: "8px", background: "#fff", padding: "5px 12px", borderRadius: "20px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" },
+  dot: { width: "10px", height: "10px", background: "#2ecc71", borderRadius: "50%", animation: "pulse 2s infinite" },
+  grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "25px" },
+  card: { background: "#fff", padding: "20px", borderRadius: "15px", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)", display: 'flex', flexDirection: 'column' },
+  cardHeader: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px" },
+  badge: { color: "#fff", padding: "5px 10px", borderRadius: "8px", fontSize: "11px", fontWeight: "bold" },
+  section: { background: "#f8f9fa", padding: "12px", borderRadius: "10px", marginBottom: "12px" },
+  sectionTitle: { fontSize: "11px", fontWeight: "800", color: "#3498db", margin: "0 0 8px 0", letterSpacing: "0.5px" },
+  itemRow: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "15px", marginBottom: "8px" },
+  btnSmall: { border: "none", background: "#3498db", color: "#fff", padding: "5px 12px", borderRadius: "6px", fontSize: "11px", cursor: "pointer", fontWeight: "bold" },
+  btnMain: { width: "100%", border: "none", color: "#fff", padding: "14px", borderRadius: "10px", cursor: "pointer", fontWeight: "bold", marginTop: "auto", transition: "all 0.3s ease" }
 };
 
 export default Kitchen;
