@@ -7,17 +7,41 @@ import socket from "../api/socket";
 function Kitchen() {
   const [orders, setOrders] = useState([]);
 
+  // useEffect(() => {
+  //   fetchOrders();
+
+  //   socket.on("newOrder", fetchOrders);
+  //   socket.on("orderStatusUpdated", fetchOrders);
+
+  //   return () => {
+  //     socket.off("newOrder");
+  //     socket.off("orderStatusUpdated");
+  //   };
+  // }, []);
   useEffect(() => {
-    fetchOrders();
+  fetchOrders();
 
-    socket.on("newOrder", fetchOrders);
-    socket.on("orderStatusUpdated", fetchOrders);
+  const onNewOrder = (order) => {
+    setOrders((prev) => [...prev, order]);
+  };
 
-    return () => {
-      socket.off("newOrder");
-      socket.off("orderStatusUpdated");
-    };
-  }, []);
+  const onStatusUpdate = (updatedOrder) => {
+    setOrders((prev) =>
+      prev.map((o) =>
+        o._id === updatedOrder._id ? updatedOrder : o
+      )
+    );
+  };
+
+  socket.on("admin_newOrder", onNewOrder);
+  socket.on("admin_orderStatusUpdated", onStatusUpdate);
+
+  return () => {
+    socket.off("admin_newOrder", onNewOrder);
+    socket.off("admin_orderStatusUpdated", onStatusUpdate);
+  };
+}, []);
+
 
   // const fetchOrders = async () => {
   //   const res = await axios.get("http://localhost:5000/api/orders");
