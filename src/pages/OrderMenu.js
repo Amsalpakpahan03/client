@@ -101,6 +101,8 @@ function OrderMenu() {
   updateOrderFromSocket(updatedOrder);
 };
 
+    
+
     socket.on("orderStatusUpdated", handler);
 
     return () => {
@@ -140,29 +142,18 @@ function OrderMenu() {
 
   /* ================= CREATE ORDER ================= */
   const handleOrder = async () => {
-    if (isLocked) return alert("Meja masih terkunci");
-    if (!tableNumber) return alert("QR tidak valid");
-    if (!orderToken) return alert("Token belum tersedia");
-    if (!Object.keys(cart).length)
-      return alert("Pilih menu dulu");
+  const items = menuItems
+    .filter((m) => cart[m._id])
+    .map((m) => ({
+      name: m.name,
+      quantity: cart[m._id],
+      price: m.price,
+      category: m.category, // WAJIB ADA agar filter Kitchen.js bekerja
+    }));
 
-    const items = menuItems
-      .filter((m) => cart[m._id])
-      .map((m) => ({
-        name: m.name,
-        quantity: cart[m._id],
-        price: m.price,
-        category: m.category,
-      }));
-
-    await createOrder({
-      tableNumber,
-      items,
-      totalPrice,
-    });
-
-    setCart({});
-  };
+  await createOrder({ tableNumber, items, totalPrice });
+  setCart({});
+};
 
   /* ================= MENU GROUPING ================= */
   const menuByCategory = useMemo(() => {
