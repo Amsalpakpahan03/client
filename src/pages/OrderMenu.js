@@ -146,6 +146,7 @@ function OrderMenu() {
     .filter((m) => cart[m._id])
     .map((m) => ({
       name: m.name,
+      description: m.description,
       quantity: cart[m._id],
       price: m.price,
       category: m.category, // WAJIB ADA agar filter Kitchen.js bekerja
@@ -320,12 +321,27 @@ const MenuItem = React.memo(function MenuItem({
         style={styles.menuImage}
       />
 
-      <div style={{ flex: 1 }}>
-        <b>{item.name}</b>
-        <div style={styles.price}>
-          Rp {item.price.toLocaleString()}
-        </div>
-      </div>
+      // <div style={{ flex: 1 }}>
+      //   <b>{item.name}</b>
+      //   <div style={styles.price}>
+      //     Rp {item.price.toLocaleString()}
+      //   </div>
+      // </div>
+
+        <div style={{ flex: 1 }}>
+  <b>{item.name}</b>
+
+  {item.description && (
+    <div style={{ fontSize: '12px', color: '#7f8c8d', marginTop: '4px' }}>
+      {item.description}
+    </div>
+  )}
+
+  <div style={{ color: '#c0392b', fontWeight: 'bold', marginTop: '6px' }}>
+    Rp {item.price.toLocaleString()}
+  </div>
+</div>
+
 
       <div style={styles.action}>
         {qty ? (
