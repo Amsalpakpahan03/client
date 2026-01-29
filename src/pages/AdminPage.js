@@ -364,35 +364,50 @@ const AdminPage = () => {
                         </span>
                       </div>
                     </div>
-                    <div style={styles.orderActions}>
+                   <div style={styles.orderActions}>
   {(() => {
     const { makanan, minuman } = splitItemsByCategory(o.items);
+    const isPending = o.status === "pending";
+    const isCooking = o.status === "cooking";
 
     return (
       <>
+        {/* MAKANAN */}
         {makanan.length > 0 && (
           <button
-            disabled={o.status !== "pending"}
-            style={styles.actionBtnDisabled(o.status === "pending")}
+            disabled={!isPending}
+            style={styles.actionBtnDisabled(isPending)}
             onClick={() => handleUpdateStatus(o._id, "cooking")}
           >
             Masak Makanan
           </button>
         )}
 
+        {/* MINUMAN */}
         {minuman.length > 0 && (
           <button
-            disabled={o.status !== "pending"}
-            style={styles.actionBtnDisabled(o.status === "pending")}
-            onClick={() => handleUpdateStatus(o._id, "cooking")}
+            disabled={!isPending}
+            style={styles.actionBtnDisabled(isPending)}
+            onClick={() => handleUpdateStatus(o._id, "served")}
           >
             Siapkan Minuman
+          </button>
+        )}
+
+        {/* FINAL */}
+        {isCooking && (
+          <button
+            style={styles.actionBtnDisabled(true)}
+            onClick={() => handleUpdateStatus(o._id, "paid")}
+          >
+            Lunas
           </button>
         )}
       </>
     );
   })()}
 </div>
+
         ) : (
           <div style={styles.productFlex}>
             {/* FORM TAMBAH MENU */}
