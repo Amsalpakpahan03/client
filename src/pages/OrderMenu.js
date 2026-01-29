@@ -373,30 +373,23 @@ const MenuItem = React.memo(function MenuItem({
 
 /* ================= STYLES ================= */
 const styles = {
-  container: { padding: 20, maxWidth: 480, margin: "0 auto" },
-  category: { borderBottom: "2px solid #c0392b", marginTop: 20 },
-  menuCard: { display: "flex", gap: 10, marginBottom: 10 },
-  menuImage: { width: 80, height: 80, borderRadius: 8 },
-  price: { color: "#c0392b", fontWeight: "bold" },
-  action: { display: "flex", gap: 6, alignItems: "center" },
-  qtyBtn: { width: 28, height: 28 },
-  addBtn: { padding: "6px 12px" },
-  cartBar: {
-    position: "fixed",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 15,
-    background: "#fff",
-    display: "flex",
-    justifyContent: "space-between",
-  },
-  checkoutBtn: { padding: "10px 24px" },
-  statusBox: {
-    padding: 20,
-    border: "2px solid",
-    borderRadius: 10,
-  },
+  page: { background: '#f8f9fa', minHeight: '100vh', paddingBottom: '80px' },
+  container: { padding: '20px', maxWidth: '500px', margin: '0 auto' },
+  pageTitle: { textAlign: 'center', color: '#2c3e50', marginBottom: '20px' },
+  categoryTitle: { borderLeft: '4px solid #c0392b', paddingLeft: '10px', color: '#c0392b', marginBottom: '15px' },
+  menuCard: { display: 'flex', gap: '15px', background: '#fff', padding: '12px', borderRadius: '12px', marginBottom: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', alignItems: 'center' },
+  menuImage: { width: '70px', height: '70px', borderRadius: '10px', objectFit: 'cover' },
+  priceText: { color: '#c0392b', fontWeight: 'bold', marginTop: '4px' },
+  qtyControl: { display: 'flex', alignItems: 'center', gap: '12px', background: '#f1f2f6', borderRadius: '20px', padding: '4px 8px' },
+  qtyBtn: { width: '28px', height: '28px', borderRadius: '50%', border: 'none', background: '#fff', cursor: 'pointer', fontWeight: 'bold' },
+  addBtn: { padding: '6px 16px', borderRadius: '20px', border: '1px solid #c0392b', background: '#fff', color: '#c0392b', fontWeight: 'bold', cursor: 'pointer' },
+  cartBar: { position: 'fixed', bottom: 0, left: 0, right: 0, background: '#fff', padding: '15px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 -4px 10px rgba(0,0,0,0.1)', zIndex: 100 },
+  checkoutBtn: { background: '#c0392b', color: '#fff', border: 'none', padding: '12px 25px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' },
+  statusBox: { background: '#fff', padding: '20px', borderRadius: '15px', border: '1px solid #ddd', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' },
+  statusTitle: { margin: '0 0 15px 0', textAlign: 'center', color: '#2c3e50' },
+  orderItem: { display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f1f1f1' },
+  totalRow: { marginTop: '15px', textAlign: 'right', borderTop: '2px dashed #eee', paddingTop: '10px', fontSize: '18px' },
+  footerNote: { textAlign: 'center', fontSize: '12px', color: '#95a5a6', marginTop: '15px' }
 };
 
 export default OrderMenu;
