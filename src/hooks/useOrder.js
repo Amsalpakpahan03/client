@@ -8,23 +8,26 @@ export const useOrder = (tableNumber) => {
   const [activeOrder, setActiveOrder] = useState(null);
 
   /* ================= CREATE ORDER ================= */
+/* ================= CREATE ORDER (REVISED) ================= */
 const createOrder = async (payload) => {
   try {
     const token = localStorage.getItem("order_token");
     if (!token) throw new Error("Token tidak ditemukan. Silakan scan ulang QR.");
 
-    console.log("📤 Mengirim data ke backend...");
     const res = await axios.post(`${API_URL}/orders`, payload, {
       headers: { Authorization: `Bearer ${token}` },
+      timeout: 15000, // Tambahkan batas waktu 15 detik
     });
 
-    console.log("✅ Pesanan Berhasil:", res.data);
     setActiveOrder(res.data);
     localStorage.setItem("activeOrderId", res.data._id);
-    return res.data; // Kembalikan data agar OrderMenu tahu proses selesai
+    return res.data;
   } catch (err) {
-    console.error("❌ Gagal membuat pesanan:", err.response?.data || err.message);
-    alert("Gagal memesan: " + (err.response?.data?.message || err.message));
+    if (err.code === 'ECONNABORTED') {
+      alert("Server Replit sedang 'bangun', silakan coba lagi dalam 10 detik.");
+    } else {
+      alert("Gagal memesan: " + (err.response?.data?.message || err.message));
+    }
     throw err;
   }
 };
