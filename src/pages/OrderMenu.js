@@ -33,10 +33,6 @@ function OrderMenu() {
   } = useOrder(tableNumber);
 
   /* ================= STATE ================= */
-  const [orderToken, setOrderToken] = useState(null);
-  const [cart, setCart] = useState({});
-  const [isLocked, setIsLocked] = useState(false);
-  /* ================= STATE ================= */
 const [orderToken, setOrderToken] = useState(null);
 const [cart, setCart] = useState({});
 const [isLocked, setIsLocked] = useState(false);
