@@ -353,67 +353,56 @@ const MenuItem = React.memo(function MenuItem({
 
 
 /* ================= STYLES ================= */
+/* ================= STYLES (FIXED) ================= */
 const styles = {
   page: { background: '#f8f9fa', minHeight: '100vh', paddingBottom: '80px' },
   container: { padding: '20px', maxWidth: '500px', margin: '0 auto' },
   pageTitle: { textAlign: 'center', color: '#2c3e50', marginBottom: '20px' },
   categoryTitle: { borderLeft: '4px solid #c0392b', paddingLeft: '10px', color: '#c0392b', marginBottom: '15px' },
-  // menuCard: { display: 'flex', gap: '15px', background: '#fff', padding: '12px', borderRadius: '12px', marginBottom: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', alignItems: 'center' },
-  // menuImage: { width: '70px', height: '70px', borderRadius: '10px', objectFit: 'cover' },
   priceText: { color: '#c0392b', fontWeight: 'bold', marginTop: '4px' },
   qtyControl: { display: 'flex', alignItems: 'center', gap: '12px', background: '#f1f2f6', borderRadius: '20px', padding: '4px 8px' },
-  qtyBtn: { width: '28px', height: '28px', borderRadius: '50%', border: 'none', background: '#fff', cursor: 'pointer', fontWeight: 'bold' },
+  qtyBtn: { width: '28px', height: '28px', borderRadius: '50%', border: 'none', background: '#fff', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   addBtn: { padding: '6px 16px', borderRadius: '20px', border: '1px solid #c0392b', background: '#fff', color: '#c0392b', fontWeight: 'bold', cursor: 'pointer' },
   cartBar: { position: 'fixed', bottom: 0, left: 0, right: 0, background: '#fff', padding: '15px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 -4px 10px rgba(0,0,0,0.1)', zIndex: 100 },
   checkoutBtn: { background: '#c0392b', color: '#fff', border: 'none', padding: '12px 25px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' },
   statusBox: { background: '#fff', padding: '20px', borderRadius: '15px', border: '1px solid #ddd', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' },
-  statusTitle: { margin: '0 0 15px 0', textAlign: 'center', color: '#2c3e50' },
-  orderItem: { display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f1f1f1' },
-  totalRow: { marginTop: '15px', textAlign: 'right', borderTop: '2px dashed #eee', paddingTop: '10px', fontSize: '18px' },
-  footerNote: { textAlign: 'center', fontSize: '12px', color: '#95a5a6', marginTop: '15px' }
   menuCard: {
-  display: "flex",
-  alignItems: "center",
-  gap: "14px",
-  background: "#fff",
-  padding: "14px",
-  borderRadius: "14px",
-  marginBottom: "12px",
-  boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-},
-
-menuImage: {
-  width: "72px",
-  height: "72px",
-  borderRadius: "12px",
-  objectFit: "cover",
-  flexShrink: 0,
-},
-
-menuInfo: {
-  flex: 1,
-  minWidth: 0, // 🔑 PENTING supaya teks tidak maksa layout
-},
-
-menuName: {
-  fontWeight: "600",
-  fontSize: "15px",
-  marginBottom: "4px",
-},
-
-menuDesc: {
-  fontSize: "12px",
-  color: "#7f8c8d",
-  lineHeight: "1.4",
-  marginBottom: "6px",
-},
-
-menuPrice: {
-  fontWeight: "bold",
-  color: "#c0392b",
-  fontSize: "14px",
-},
-
+    display: "flex",
+    alignItems: "center",
+    gap: "14px",
+    background: "#fff",
+    padding: "14px",
+    borderRadius: "14px",
+    marginBottom: "12px",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+  },
+  menuImage: {
+    width: "72px",
+    height: "72px",
+    borderRadius: "12px",
+    objectFit: "cover",
+    flexShrink: 0,
+  },
+  menuInfo: {
+    flex: 1,
+    minWidth: 0,
+  },
+  menuName: {
+    fontWeight: "600",
+    fontSize: "15px",
+    marginBottom: "4px",
+  },
+  menuDesc: {
+    fontSize: "12px",
+    color: "#7f8c8d",
+    lineHeight: "1.4",
+    marginBottom: "6px",
+  },
+  menuPrice: {
+    fontWeight: "bold",
+    color: "#c0392b",
+    fontSize: "14px",
+  },
 };
 
 export default OrderMenu;
