@@ -12,34 +12,39 @@ function Kitchen() {
   }, []);
 
   /* ================= SOCKET ================= */
-  useEffect(() => {
-    fetchOrders();
+  
+useEffect(() => {
+  fetchOrders();
 
-    const onNewOrder = (order) => {
-      setOrders((prev) => {
-        if (prev.some((o) => o._id === order._id)) return prev;
-        return [...prev, order];
-      });
-    };
+  const onNewOrder = (order) => {
+    console.log("Pesanan baru diterima via socket:", order); // Tambahkan log untuk debug
+    setOrders((prev) => {
+      // Filter untuk memastikan tidak ada ID yang sama sebelum menambah
+      const isExist = prev.find((o) => o._id === order._id);
+      if (isExist) return prev; 
+      return [...prev, order];
+    });
+  };
 
-    const onStatusUpdate = (updatedOrder) => {
-      setOrders((prev) =>
-        prev
-          .map((o) =>
-            o._id === updatedOrder._id ? updatedOrder : o
-          )
-          .filter((o) => o.status !== "paid")
-      );
-    };
+  const onStatusUpdate = (updatedOrder) => {
+    setOrders((prev) => {
+      // Jika statusnya 'paid', hilangkan dari daftar dapur
+      if (updatedOrder.status === "paid") {
+        return prev.filter((o) => o._id !== updatedOrder._id);
+      }
+      // Update data yang ada
+      return prev.map((o) => (o._id === updatedOrder._id ? updatedOrder : o));
+    });
+  };
 
-    socket.on("admin_newOrder", onNewOrder);
-    socket.on("admin_orderStatusUpdated", onStatusUpdate);
+  socket.on("admin_newOrder", onNewOrder);
+  socket.on("admin_orderStatusUpdated", onStatusUpdate);
 
-    return () => {
-      socket.off("admin_newOrder", onNewOrder);
-      socket.off("admin_orderStatusUpdated", onStatusUpdate);
-    };
-  }, [fetchOrders]);
+  return () => {
+    socket.off("admin_newOrder", onNewOrder);
+    socket.off("admin_orderStatusUpdated", onStatusUpdate);
+  };
+}, [fetchOrders]);
 
   /* ================= UPDATE STATUS ================= */
   const updateStatus = async (id, currentStatus) => {
