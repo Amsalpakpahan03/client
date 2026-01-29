@@ -47,23 +47,39 @@ function Kitchen() {
   }, []);
 
   /* ================= 3. SOCKET CONNECTION ================= */
-  useEffect(() => {
-    fetchOrders();
+  /* ================= SOCKET (PERBAIKAN) ================= */
+useEffect(() => {
+  fetchOrders();
 
-    // Pasang listener
-    socket.on("admin_newOrder", onNewOrder);
-    socket.on("orderStatusUpdated", onStatusUpdate);
-    
-    // Debugging koneksi
-    socket.on("connect", () => console.log("✅ Kitchen Connected to Socket"));
-    socket.on("disconnect", () => console.log("❌ Kitchen Disconnected"));
+  const onNewOrder = (order) => {
+    console.log("Pesanan baru diterima via socket:", order); // Tambahkan log untuk debug
+    setOrders((prev) => {
+      // Filter untuk memastikan tidak ada ID yang sama sebelum menambah
+      const isExist = prev.find((o) => o._id === order._id);
+      if (isExist) return prev; 
+      return [...prev, order];
+    });
+  };
 
-    return () => {
-      // Bersihkan listener saat komponen unmount agar tidak double
-      socket.off("admin_newOrder", onNewOrder);
-      socket.off("orderStatusUpdated", onStatusUpdate);
-    };
-  }, [fetchOrders, onNewOrder, onStatusUpdate]);
+  const onStatusUpdate = (updatedOrder) => {
+    setOrders((prev) => {
+      // Jika statusnya 'paid', hilangkan dari daftar dapur
+      if (updatedOrder.status === "paid") {
+        return prev.filter((o) => o._id !== updatedOrder._id);
+      }
+      // Update data yang ada
+      return prev.map((o) => (o._id === updatedOrder._id ? updatedOrder : o));
+    });
+  };
+
+  socket.on("admin_newOrder", onNewOrder);
+  socket.on("admin_orderStatusUpdated", onStatusUpdate);
+
+  return () => {
+    socket.off("admin_newOrder", onNewOrder);
+    socket.off("admin_orderStatusUpdated", onStatusUpdate);
+  };
+}, [fetchOrders]);
 
   /* ================= 4. ACTIONS ================= */
   const updateItemStatus = async (orderId, itemId, currentStatus) => {
