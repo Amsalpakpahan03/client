@@ -43,8 +43,19 @@ function Kitchen() {
     };
   }, []);
 
-  const updateItem = (orderId, itemId, status) =>
-    OrderAPI.updateItemStatus(orderId, itemId, status);
+  /* ================= HANDLER ================= */
+
+  const serveDrink = (orderId, itemId) => {
+    OrderAPI.updateItemStatus(orderId, itemId, "served");
+  };
+
+  const cookFood = (orderId, itemId) => {
+    OrderAPI.updateItemStatus(orderId, itemId, "cooking");
+  };
+
+  const serveFood = (orderId, itemId) => {
+    OrderAPI.updateItemStatus(orderId, itemId, "served");
+  };
 
   return (
     <div>
@@ -55,32 +66,36 @@ function Kitchen() {
         const drinks = order.items.filter(i => i.category === "Minuman");
 
         return (
-          <div key={order._id} style={{ border: "1px solid #ccc", margin: 10 }}>
-            <h3>Meja {order.tableNumber}</h3>
+          <div key={order._id} style={{ border: "1px solid #ccc", margin: 10, padding: 10 }}>
+            <h3>🪑 Meja {order.tableNumber}</h3>
 
+            {/* ================= MINUMAN ================= */}
             <h4>🥤 Minuman</h4>
             {drinks.map(i => (
               <div key={i._id}>
-                {i.name}
-                {i.status !== "served" && (
-                  <button onClick={() => updateItem(order._id, i._id, "served")}>
+                {i.name} ({i.status})
+                {i.status === "pending" && (
+                  <button onClick={() => serveDrink(order._id, i._id)}>
                     Antar
                   </button>
                 )}
               </div>
             ))}
 
+            {/* ================= MAKANAN ================= */}
             <h4>🍔 Makanan</h4>
             {foods.map(i => (
               <div key={i._id}>
-                {i.name}
+                {i.name} ({i.status})
+
                 {i.status === "pending" && (
-                  <button onClick={() => updateItem(order._id, i._id, "cooking")}>
+                  <button onClick={() => cookFood(order._id, i._id)}>
                     Masak
                   </button>
                 )}
+
                 {i.status === "cooking" && (
-                  <button onClick={() => updateItem(order._id, i._id, "served")}>
+                  <button onClick={() => serveFood(order._id, i._id)}>
                     Antar
                   </button>
                 )}
