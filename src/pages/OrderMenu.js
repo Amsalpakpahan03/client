@@ -94,17 +94,11 @@ function OrderMenu() {
     // JOIN ROOM
     socket.emit("joinTable", tableNumber);
 
-    const handler = (updatedOrder) => {
-      console.log("📡 orderStatusUpdated:", updatedOrder);
-
-      if (
-        String(updatedOrder.tableNumber) !==
-        String(tableNumber)
-      )
-        return;
-
-      updateOrderFromSocket(updatedOrder);
-    };
+   const handler = (updatedOrder) => {
+  // Gunakan String() untuk memastikan perbandingan tipe data yang sama
+  if (String(updatedOrder.tableNumber) !== String(tableNumber)) return;
+  updateOrderFromSocket(updatedOrder);
+};
 
     socket.on("orderStatusUpdated", handler);
 
