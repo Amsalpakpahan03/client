@@ -1,5 +1,3 @@
-buatkan agar tombol update makanan dan minuman terpisah
-
 import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import { io } from "socket.io-client";
@@ -140,6 +138,41 @@ const AdminPage = () => {
     }
   };
 
+  const splitItemsByCategory = (items = []) => ({
+  makanan: items.filter((i) => i.category !== "Minuman"),
+  minuman: items.filter((i) => i.category === "Minuman"),
+});
+{(() => {
+  const { makanan, minuman } = splitItemsByCategory(o.items);
+
+  return (
+    <>
+      {makanan.length > 0 && (
+        <>
+          <b>🍽 Makanan</b>
+          {makanan.map((item, idx) => (
+            <div key={idx} style={styles.itemRow}>
+              <b>{item.quantity}x</b> {item.name}
+            </div>
+          ))}
+        </>
+      )}
+
+      {minuman.length > 0 && (
+        <>
+          <b>🥤 Minuman</b>
+          {minuman.map((item, idx) => (
+            <div key={idx} style={styles.itemRow}>
+              <b>{item.quantity}x</b> {item.name}
+            </div>
+          ))}
+        </>
+      )}
+    </>
+  );
+})()}
+
+
   const handleDeleteProduct = async (id) => {
     if (!window.confirm("Yakin ingin menghapus produk ini?")) return;
     try {
@@ -253,6 +286,7 @@ const AdminPage = () => {
               </p>
             </div>
           </div>
+                
           <div style={styles.statCard}>
             <div
               style={{
@@ -331,33 +365,34 @@ const AdminPage = () => {
                       </div>
                     </div>
                     <div style={styles.orderActions}>
-                      <button
-                        disabled={o.status !== "pending"}
-                        style={styles.actionBtnDisabled(o.status === "pending")}
-                        onClick={() => handleUpdateStatus(o._id, "cooking")}
-                      >
-                        Masak
-                      </button>
-                      <button
-                        disabled={o.status !== "cooking"}
-                        style={styles.actionBtnDisabled(o.status === "cooking")}
-                        onClick={() => handleUpdateStatus(o._id, "served")}
-                      >
-                        Antar
-                      </button>
-                      <button
-                        disabled={o.status !== "served"}
-                        style={styles.actionBtnDisabled(o.status === "served")}
-                        onClick={() => handleUpdateStatus(o._id, "paid")}
-                      >
-                        Lunas
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+  {(() => {
+    const { makanan, minuman } = splitItemsByCategory(o.items);
+
+    return (
+      <>
+        {makanan.length > 0 && (
+          <button
+            disabled={o.status !== "pending"}
+            style={styles.actionBtnDisabled(o.status === "pending")}
+            onClick={() => handleUpdateStatus(o._id, "cooking")}
+          >
+            Masak Makanan
+          </button>
+        )}
+
+        {minuman.length > 0 && (
+          <button
+            disabled={o.status !== "pending"}
+            style={styles.actionBtnDisabled(o.status === "pending")}
+            onClick={() => handleUpdateStatus(o._id, "cooking")}
+          >
+            Siapkan Minuman
+          </button>
+        )}
+      </>
+    );
+  })()}
+</div>
         ) : (
           <div style={styles.productFlex}>
             {/* FORM TAMBAH MENU */}
