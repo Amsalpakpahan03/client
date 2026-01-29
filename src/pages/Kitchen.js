@@ -1,84 +1,58 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { OrderAPI } from "../api/order.api";
 import socket from "../api/socket";
-
-
 
 function Kitchen() {
   const [orders, setOrders] = useState([]);
 
-  // useEffect(() => {
-  //   fetchOrders();
+  /* ================= FETCH AWAL ================= */
+  const fetchOrders = useCallback(async () => {
+    const { data } = await OrderAPI.getAll();
+    setOrders(data);
+  }, []);
 
-  //   socket.on("newOrder", fetchOrders);
-  //   socket.on("orderStatusUpdated", fetchOrders);
-
-  //   return () => {
-  //     socket.off("newOrder");
-  //     socket.off("orderStatusUpdated");
-  //   };
-  // }, []);
+  /* ================= SOCKET ================= */
   useEffect(() => {
-  fetchOrders();
+    fetchOrders();
 
-  const onNewOrder = (order) => {
-    setOrders((prev) => [...prev, order]);
-  };
+    const onNewOrder = (order) => {
+      setOrders((prev) => {
+        if (prev.some((o) => o._id === order._id)) return prev;
+        return [...prev, order];
+      });
+    };
 
-  const onStatusUpdate = (updatedOrder) => {
-    setOrders((prev) =>
-      prev.map((o) =>
-        o._id === updatedOrder._id ? updatedOrder : o
-      )
-    );
-  };
+    const onStatusUpdate = (updatedOrder) => {
+      setOrders((prev) =>
+        prev
+          .map((o) =>
+            o._id === updatedOrder._id ? updatedOrder : o
+          )
+          .filter((o) => o.status !== "paid")
+      );
+    };
 
-  socket.on("admin_newOrder", onNewOrder);
-  socket.on("admin_orderStatusUpdated", onStatusUpdate);
+    socket.on("admin_newOrder", onNewOrder);
+    socket.on("admin_orderStatusUpdated", onStatusUpdate);
 
-  return () => {
-    socket.off("admin_newOrder", onNewOrder);
-    socket.off("admin_orderStatusUpdated", onStatusUpdate);
-  };
-}, []);
+    return () => {
+      socket.off("admin_newOrder", onNewOrder);
+      socket.off("admin_orderStatusUpdated", onStatusUpdate);
+    };
+  }, [fetchOrders]);
 
-
-  // const fetchOrders = async () => {
-  //   const res = await axios.get("http://localhost:5000/api/orders");
-  //   setOrders(res.data);
-  // };
-  const fetchOrders = async () => {
-  const { data } = await OrderAPI.getAll();
-  setOrders(data);
-};
-
-
-  // const updateStatus = async (id, currentStatus) => {
-  //   const flow = {
-  //     pending: "cooking",
-  //     cooking: "served",
-  //     served: "paid",
-  //   };
-
-  //   if (flow[currentStatus]) {
-  //     await axios.put(
-  //       `http://localhost:5000/api/orders/${id}/status`,
-  //       { status: flow[currentStatus] }
-  //     );
-  //   }
-  // };
+  /* ================= UPDATE STATUS ================= */
   const updateStatus = async (id, currentStatus) => {
-  const flow = {
-    pending: "cooking",
-    cooking: "served",
-    served: "paid",
+    const flow = {
+      pending: "cooking",
+      cooking: "served",
+      served: "paid",
+    };
+
+    if (flow[currentStatus]) {
+      await OrderAPI.updateStatus(id, flow[currentStatus]);
+    }
   };
-
-  if (flow[currentStatus]) {
-    await OrderAPI.updateStatus(id, flow[currentStatus]);
-  }
-};
-
 
   const statusConfig = {
     pending: { label: "PENDING", color: "#e74c3c" },
@@ -91,20 +65,25 @@ function Kitchen() {
     <div style={styles.page}>
       <header style={styles.header}>
         <h1 style={styles.title}>🍳 Dapur – Antrian Pesanan</h1>
-        <span style={styles.subtitle}>First Come First Served (FCFS)</span>
+        <span style={styles.subtitle}>
+          First Come First Served (FCFS)
+        </span>
       </header>
 
       {orders.length === 0 ? (
-        <div style={styles.empty}>Tidak ada antrian saat ini</div>
+        <div style={styles.empty}>Tidak ada antrian</div>
       ) : (
         <div style={styles.grid}>
           {orders.map((order, index) => {
             const status = statusConfig[order.status];
+
             return (
               <div key={order._id} style={styles.card}>
                 <div style={styles.cardHeader}>
                   <div>
-                    <h2 style={styles.table}>Meja {order.tableNumber}</h2>
+                    <h2 style={styles.table}>
+                      Meja {order.tableNumber}
+                    </h2>
                     <span style={styles.queue}>
                       Antrian #{index + 1}
                     </span>
@@ -128,7 +107,8 @@ function Kitchen() {
                 <ul style={styles.items}>
                   {order.items.map((item, i) => (
                     <li key={i}>
-                      <strong>{item.quantity}x</strong> {item.name}
+                      <strong>{item.quantity}x</strong>{" "}
+                      {item.name}
                     </li>
                   ))}
                 </ul>
@@ -159,7 +139,7 @@ function Kitchen() {
 
 export default Kitchen;
 
-/* ================= STYLES ================= */
+/* ================= STYLES (WAJIB ADA) ================= */
 
 const styles = {
   page: {
@@ -168,16 +148,9 @@ const styles = {
     padding: "24px",
     fontFamily: "Segoe UI, sans-serif",
   },
-  header: {
-    marginBottom: "24px",
-  },
-  title: {
-    margin: 0,
-    fontSize: "28px",
-  },
-  subtitle: {
-    color: "#7f8c8d",
-  },
+  header: { marginBottom: "24px" },
+  title: { margin: 0, fontSize: "28px" },
+  subtitle: { color: "#7f8c8d" },
   empty: {
     background: "#fff",
     padding: "40px",
@@ -196,23 +169,14 @@ const styles = {
     borderRadius: "16px",
     padding: "16px",
     boxShadow: "0 8px 20px rgba(0,0,0,0.08)",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between",
   },
   cardHeader: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "flex-start",
   },
-  table: {
-    margin: 0,
-    fontSize: "20px",
-  },
-  queue: {
-    fontSize: "13px",
-    color: "#7f8c8d",
-  },
+  table: { margin: 0, fontSize: "20px" },
+  queue: { fontSize: "13px", color: "#7f8c8d" },
   badge: {
     padding: "6px 12px",
     borderRadius: "20px",
@@ -225,10 +189,7 @@ const styles = {
     color: "#7f8c8d",
     margin: "10px 0",
   },
-  items: {
-    paddingLeft: "18px",
-    marginBottom: "16px",
-  },
+  items: { paddingLeft: "18px", marginBottom: "16px" },
   button: {
     border: "none",
     color: "#fff",
