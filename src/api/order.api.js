@@ -1,3 +1,4 @@
+// api/order.api.js
 import api from "./axios";
 
 export const OrderAPI = {
@@ -15,5 +16,10 @@ export const OrderAPI = {
 
   updateStatus(id, status) {
     return api.put(`/orders/${id}/status`, { status });
+  },
+
+
+  updateItemStatus(orderId, itemId, status) {
+    return api.put(`/orders/${orderId}/items/${itemId}`, { status });
   },
 };
