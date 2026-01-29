@@ -8,22 +8,26 @@ export const useOrder = (tableNumber) => {
   const [activeOrder, setActiveOrder] = useState(null);
 
   /* ================= CREATE ORDER ================= */
-  const createOrder = async (payload) => {
+const createOrder = async (payload) => {
+  try {
     const token = localStorage.getItem("order_token");
+    if (!token) throw new Error("Token tidak ditemukan. Silakan scan ulang QR.");
 
-    const res = await axios.post(
-      `${API_URL}/orders`,
-      payload,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+    console.log("📤 Mengirim data ke backend...");
+    const res = await axios.post(`${API_URL}/orders`, payload, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
+    console.log("✅ Pesanan Berhasil:", res.data);
     setActiveOrder(res.data);
     localStorage.setItem("activeOrderId", res.data._id);
-  };
+    return res.data; // Kembalikan data agar OrderMenu tahu proses selesai
+  } catch (err) {
+    console.error("❌ Gagal membuat pesanan:", err.response?.data || err.message);
+    alert("Gagal memesan: " + (err.response?.data?.message || err.message));
+    throw err;
+  }
+};
 
   /* ================= RESTORE ORDER ================= */
   useEffect(() => {
