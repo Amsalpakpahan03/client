@@ -1,5 +1,3 @@
-buatkan agar tombol update makanan dan minuman terpisah
-
 import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import { io } from "socket.io-client";
