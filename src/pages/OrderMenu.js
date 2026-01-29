@@ -33,10 +33,9 @@ function OrderMenu() {
   } = useOrder(tableNumber);
 
   /* ================= STATE ================= */
-const [orderToken, setOrderToken] = useState(null);
-const [cart, setCart] = useState({});
-const [isLocked, setIsLocked] = useState(false);
-const [isOrdering, setIsOrdering] = useState(false); // Tambahkan ini
+  const [orderToken, setOrderToken] = useState(null);
+  const [cart, setCart] = useState({});
+  const [isLocked, setIsLocked] = useState(false);
 
   /* ================= CLIENT ID ================= */
   const clientId = useMemo(() => {
@@ -142,59 +141,18 @@ const [isOrdering, setIsOrdering] = useState(false); // Tambahkan ini
   }, [cart, menuItems]);
 
   /* ================= CREATE ORDER ================= */
-//   const handleOrder = async () => {
-//   const items = menuItems
-//     .filter((m) => cart[m._id])
-//     .map((m) => ({
-//       name: m.name,
-//       quantity: cart[m._id],
-//       price: m.price,
-//       category: m.category, // WAJIB ADA agar filter Kitchen.js bekerja
-//     }));
+  const handleOrder = async () => {
+  const items = menuItems
+    .filter((m) => cart[m._id])
+    .map((m) => ({
+      name: m.name,
+      quantity: cart[m._id],
+      price: m.price,
+      category: m.category, // WAJIB ADA agar filter Kitchen.js bekerja
+    }));
 
-//   await createOrder({ tableNumber, items, totalPrice });
-//   setCart({});
-// };
-  /* ================= CREATE ORDER ================= */
-const handleOrder = async () => {
-  // 1. Validasi dasar
-  if (isLocked) return alert("Meja masih terkunci oleh pengguna lain");
-  if (!tableNumber) return alert("Meja tidak terdeteksi");
-  if (!Object.keys(cart).length) return alert("Pilih menu dulu");
-
-  // 2. Alert Konfirmasi Pesanan
-  const confirmMessage = `Konfirmasi Pesanan?\nTotal: Rp ${totalPrice.toLocaleString()}\n\nPastikan semua menu sudah sesuai.`;
-  const isConfirmed = window.confirm(confirmMessage);
-
-  if (!isConfirmed) return;
-
-  try {
-    setIsOrdering(true); // Mulai loading
-
-    const items = menuItems
-      .filter((m) => cart[m._id])
-      .map((m) => ({
-        name: m.name,
-        quantity: cart[m._id],
-        price: m.price,
-        category: m.category, 
-      }));
-
-    const res = await createOrder({ tableNumber, items, totalPrice });
-    
-    // Opsional: Alert sukses setelah pesanan masuk
-    if (res) {
-      alert("Pesanan berhasil dikirim ke dapur!");
-      setCart({});
-    }
-
-  } catch (err) {
-    // Error handling jika request timeout atau gagal
-    console.error("Gagal mengirim pesanan:", err);
-    alert("Gagal mengirim pesanan. Silakan coba lagi.");
-  } finally {
-    setIsOrdering(false); // Matikan loading
-  }
+  await createOrder({ tableNumber, items, totalPrice });
+  setCart({});
 };
 
   /* ================= MENU GROUPING ================= */
@@ -322,24 +280,16 @@ const handleOrder = async () => {
       )}
 
       {!!Object.keys(cart).length && (
-  <div style={styles.cartBar}>
-    <div>
-      <div style={{ fontSize: '12px', color: '#666' }}>Total Harga</div>
-      <b style={{ fontSize: '18px', color: '#c0392b' }}>Rp {totalPrice.toLocaleString()}</b>
-    </div>
-    <button
-      style={{
-        ...styles.checkoutBtn,
-        opacity: isOrdering ? 0.7 : 1, // Beri efek pudar saat loading
-        cursor: isOrdering ? 'not-allowed' : 'pointer'
-      }}
-      onClick={handleOrder}
-      disabled={isOrdering} // Matikan tombol agar tidak double klik
-    >
-      {isOrdering ? "MEMPROSES..." : "PESAN SEKARANG"}
-    </button>
-  </div>
-)}
+        <div style={styles.cartBar}>
+          <b>Rp {totalPrice.toLocaleString()}</b>
+          <button
+            style={styles.checkoutBtn}
+            onClick={handleOrder}
+          >
+            PESAN
+          </button>
+        </div>
+      )}
     </div>
   );
 }
