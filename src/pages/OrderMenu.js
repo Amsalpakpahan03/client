@@ -59,6 +59,34 @@ function OrderMenu() {
   }, [query]);
 
   /* ================= TABLE LOCK ================= */
+  // useEffect(() => {
+  //   if (!tableNumber) return;
+
+  //   socket.emit("tryAccessTable", {
+  //     tableId: tableNumber,
+  //     clientId,
+  //   });
+
+  //   const denyHandler = (data) => {
+  //     setIsLocked(true);
+  //     // alert(data.message);
+  //   };
+
+  //   socket.on("accessDenied", denyHandler);
+
+  //   const heartbeat = setInterval(() => {
+  //     socket.emit("heartbeat", {
+  //       tableId: tableNumber,
+  //       clientId,
+  //     });
+  //   }, 5000);
+
+  //   return () => {
+  //     clearInterval(heartbeat);
+  //     socket.off("accessDenied", denyHandler);
+  //   };
+  // }, [tableNumber, clientId]);
+  /* ================= TABLE LOCK ================= */
   useEffect(() => {
     if (!tableNumber) return;
 
@@ -67,12 +95,21 @@ function OrderMenu() {
       clientId,
     });
 
+    // Handler jika akses DITOLAK saat pertama kali masuk
     const denyHandler = (data) => {
-      setIsLocked(true);
-      alert(data.message);
+      setIsLocked(true); // Ini akan memicu tampilan overlay
+      // alert(data.message); <-- hapus alert ini
+    };
+
+    // Handler jika meja baru saja DIKUNCI orang lain saat kita lagi liat menu
+    const lockedHandler = (data) => {
+      if (String(data.tableId) === String(tableNumber) && data.clientId !== clientId) {
+        setIsLocked(true);
+      }
     };
 
     socket.on("accessDenied", denyHandler);
+    socket.on("tableLocked", lockedHandler); // Pastikan server emit ini juga
 
     const heartbeat = setInterval(() => {
       socket.emit("heartbeat", {
@@ -84,6 +121,7 @@ function OrderMenu() {
     return () => {
       clearInterval(heartbeat);
       socket.off("accessDenied", denyHandler);
+      socket.off("tableLocked", lockedHandler);
     };
   }, [tableNumber, clientId]);
 
@@ -195,6 +233,27 @@ function OrderMenu() {
         return {};
     }
   };
+
+  if (isLocked) {
+    return (
+      <div style={styles.lockedOverlay}>
+        <div style={styles.lockedContent}>
+          <div style={{ fontSize: "50px", marginBottom: "20px" }}>⚠️</div>
+          <h2 style={{ color: "#2c3e50" }}>Meja Sedang Digunakan</h2>
+          <p style={{ color: "#7f8c8d", lineHeight: "1.5", fontSize: "14px" }}>
+            Maaf, meja nomor <b>{tableNumber}</b> sedang diakses oleh pelanggan lain. 
+            Silakan coba lagi beberapa saat lagi atau hubungi pelayan.
+          </p>
+          <button 
+            style={styles.refreshBtn} 
+            onClick={() => window.location.reload()}
+          >
+            Cek Lagi
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   /* ================= VIEW: ORDER STATUS ================= */
   /* ================= VIEW: ORDER STATUS ================= */
@@ -355,6 +414,32 @@ const MenuItem = React.memo(function MenuItem({
 /* ================= STYLES ================= */
 /* ================= STYLES (FIXED) ================= */
 const styles = {
+  lockedOverlay: {
+    position: "fixed",
+    top: 0, left: 0, right: 0, bottom: 0,
+    background: "rgba(255, 255, 255, 0.98)",
+    zIndex: 9999,
+    display: "flex", alignItems: "center", justifyContent: "center",
+    padding: "30px", textAlign: "center",
+  },
+  lockedContent: {
+    background: "#fff",
+    padding: "40px 20px",
+    borderRadius: "20px",
+    boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+    maxWidth: "350px",
+  },
+  refreshBtn: {
+    marginTop: "25px",
+    padding: "12px 30px",
+    borderRadius: "25px",
+    border: "none",
+    background: "#c0392b",
+    color: "#fff",
+    fontWeight: "bold",
+    cursor: "pointer",
+    width: "100%",
+  },
   page: { background: '#f8f9fa', minHeight: '100vh', paddingBottom: '80px' },
   container: { padding: '20px', maxWidth: '500px', margin: '0 auto' },
   pageTitle: { textAlign: 'center', color: '#2c3e50', marginBottom: '20px' },
